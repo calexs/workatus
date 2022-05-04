@@ -23,31 +23,130 @@ public class UsuarioController {
 		this.encoder = encoder;
 	}
 
-	@GetMapping("/listarTodos")
-	public ResponseEntity<List<UsuarioModel>> listarTodos() {
-		return ResponseEntity.ok(repository.findAll());
+	@GetMapping("/getAll")
+	public List<UsuarioModel> getAll() {
+		return repository.findAll();
 	}
 
-	@PostMapping("/salvar")
-	public ResponseEntity<UsuarioModel> salvar(@RequestBody UsuarioModel usuario) {
-		usuario.setPassword(encoder.encode(usuario.getPassword()));
-		return ResponseEntity.ok(repository.save(usuario));
+	@GetMapping("/getId")
+	public Optional<UsuarioModel> getUsuarioId(@RequestParam int id) {
+		return repository.findById(id);
 	}
 
-	@GetMapping("/validarSenha")
-	public ResponseEntity<Boolean> validarSenha(@RequestParam String login, @RequestParam String password) {
+	@GetMapping("/getLogin")
+	public Optional<UsuarioModel> getUsuarioLogin(@RequestParam String login) {
+		return repository.findByLogin(login);
+	}
 
-		Optional<UsuarioModel> optUsuario = repository.findByLogin(login);
+	@PostMapping("/insert")
+	public ResponseEntity<Boolean> insertUsuario(@RequestBody UsuarioModel usuario) {
+		boolean loginExiste = loginValido(usuario.getLogin());
+
+		if (loginExiste) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+		} else {
+			repository.save(new UsuarioModel(usuario.getLogin(), encoder.encode(usuario.getSenha())));
+			return ResponseEntity.status(HttpStatus.OK).body(true);
+		}
+	}
+
+	@PostMapping("/check")
+	public ResponseEntity<Boolean> checkUsuario(@RequestBody UsuarioModel usuario) {
+		boolean loginExiste = loginValido(usuario.getLogin());
+
+		if (!loginExiste)
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+
+		Optional<UsuarioModel> usuarioExistente = repository.findByLogin(usuario.getLogin());
+		UsuarioModel usuarioExiste = usuarioExistente.get();
+
+		boolean valid = encoder.matches(usuario.getSenha(), usuarioExiste.getSenha());
+
+		HttpStatus status = (valid) ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+		return ResponseEntity.status(status).body(valid);
+	}
+
+	@DeleteMapping("/deleteId")
+	public ResponseEntity<Boolean> deleteUsuarioId(@RequestParam int id) {
+		Optional<UsuarioModel> optUsuario = repository.findById(id);
+
 		if (optUsuario.isEmpty()) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(false);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+		} else {
+			repository.deleteById(id);
+			return ResponseEntity.status(HttpStatus.OK).body(true);
+		}
+	}
+
+	@DeleteMapping("/deleteLogin")
+	public ResponseEntity<Boolean> deleteUsuarioLogin(@RequestParam String login) {
+		Optional<UsuarioModel> optUsuario = repository.findByLogin(login);
+
+		if (optUsuario.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+		} else {
+			repository.deleteById(optUsuario.get().getId());
+			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
 
-		UsuarioModel usuario = optUsuario.get();
-		boolean valid = encoder.matches(password, usuario.getPassword());
-
-		HttpStatus status = (valid) ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
-		return ResponseEntity.status(status).body(valid);
-
 	}
 
+	@PutMapping("/put")
+	public ResponseEntity<Boolean> putUsuario(@RequestBody UsuarioModel usuario) {
+		boolean idExiste = idValido(usuario.getId());
+
+		if (!idExiste) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+		} else {
+			UsuarioModel usuarioCadastrado = repository.findById(usuario.getId()).get();
+
+			boolean senhasIguais = encoder.matches(usuario.getSenha(), usuarioCadastrado.getSenha());
+			boolean loginsIguais = usuario.getLogin().equals(usuarioCadastrado.getLogin());
+
+			if (loginsIguais) {
+				if (senhasIguais) {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+				} else {
+					usuarioCadastrado.setSenha(encoder.encode(usuario.getSenha()));
+				}
+			} else {
+				Optional<UsuarioModel> usuarioComMesmoLogin = repository.findByLogin(usuario.getLogin());
+				if (usuarioComMesmoLogin.isEmpty()) {
+					usuarioCadastrado.setLogin(usuario.getLogin());
+				} else {
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+				}
+				if (!senhasIguais)
+					usuarioCadastrado.setSenha(encoder.encode(usuario.getSenha()));
+			}
+			repository.save(usuarioCadastrado);
+			return ResponseEntity.status(HttpStatus.OK).body(true);
+		}
+	}
+
+	public boolean idValido(int id) {
+		Optional<UsuarioModel> optUsuario = repository.findById(id);
+
+		if (optUsuario.isEmpty())
+			return false;
+		else
+			return true;
+	}
+
+	public boolean loginValido(String login) {
+		Optional<UsuarioModel> optUsuario = repository.findByLogin(login);
+
+		if (optUsuario.isEmpty())
+			return false;
+		else
+			return true;
+	}
+
+	public boolean senhaValida(int id, String senha) {
+		Optional<UsuarioModel> optUsuario = repository.findById(id);
+
+		UsuarioModel usuarioExistente = optUsuario.get();
+
+		return encoder.matches(senha, usuarioExistente.getSenha());
+	}
 }
