@@ -9,8 +9,18 @@ import javax.persistence.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity(name = "Usuario")
+@Entity(name = "tbUsuario")
 public class UsuarioModel {
+	
+	public UsuarioModel(String login, String senha) {
+		super();
+		this.login = login;
+		this.senha = senha;
+	}
+	
+	public UsuarioModel() {
+		
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +29,11 @@ public class UsuarioModel {
 	@Column(unique = true)
 	private String login;
 	
-	private String password;
+	private String senha;
+	
+	public Integer getId() {
+		return id;
+	}
 	
 	public String getLogin() {
 		return login;
@@ -29,12 +43,12 @@ public class UsuarioModel {
 		this.login = login;
 	}
 
-	public String getPassword() {
-		return password;
+	public String getSenha() {
+		return senha;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	public void setSenha(String senha) {
+		this.senha = senha;
 	}
 
 }
