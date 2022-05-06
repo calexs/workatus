@@ -1,4 +1,6 @@
 package com.project.workatus.model;
+package com.project.workatus.model.enums;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,10 +18,6 @@ public class UsuarioModel {
 		super();
 		this.login = login;
 		this.senha = senha;
-	}
-	
-	public UsuarioModel() {
-		
 	}
 
 	@Id
@@ -48,6 +46,14 @@ public class UsuarioModel {
 	}
 
 	public void setSenha(String senha) {
+		this.senha = senha;
+	}
+	
+	public String getRole() {
+		return senha;
+	}
+
+	public void setRole(String senha) {
 		this.senha = senha;
 	}
 
