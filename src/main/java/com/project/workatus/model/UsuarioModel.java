@@ -14,7 +14,7 @@ import javax.persistence.*;
 @Entity(name = "tbUsuario")
 public class UsuarioModel {
 	
-	public UsuarioModel(String login, String senha) {
+	public UsuarioModel(String login, String senha, EnumCargo cargo) {
 		super();
 		this.login = login;
 		this.senha = senha;
@@ -29,6 +29,8 @@ public class UsuarioModel {
 	
 	private String senha;
 	
+	private EnumCargo cargo;
+
 	public Integer getId() {
 		return id;
 	}
@@ -49,12 +51,12 @@ public class UsuarioModel {
 		this.senha = senha;
 	}
 	
-	public String getRole() {
-		return senha;
+	public EnumCargo getCargo() {
+		return cargo;
 	}
 
-	public void setRole(String senha) {
-		this.senha = senha;
+	public void setCargo(EnumCargo cargo) {
+		this.cargo = cargo;
 	}
 
 }
