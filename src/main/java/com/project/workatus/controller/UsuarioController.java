@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import com.project.workatus.model.UsuarioModel;
 import com.project.workatus.repository.UsuarioRepository;
 
+import io.swagger.annotations.ApiOperation;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,22 +23,26 @@ public class UsuarioController {
 		this.repository = repository;
 		this.encoder = encoder;
 	}
-
+	
+	@ApiOperation(value = "Retorna todos os usuários cadastrados")
 	@GetMapping("/getAll")
 	public List<UsuarioModel> getAll() {
 		return repository.findAll();
 	}
-
+	
+	@ApiOperation(value = "Retorna um usuário de acordo com o Id")
 	@GetMapping("/getId")
 	public Optional<UsuarioModel> getUsuarioId(@RequestParam int id) {
 		return repository.findById(id);
 	}
-
+	
+	@ApiOperation(value = "Retorna um usuário de acordo com o Login")
 	@GetMapping("/getLogin")
 	public Optional<UsuarioModel> getUsuarioLogin(@RequestParam String login) {
 		return repository.findByLogin(login);
 	}
-
+	
+	@ApiOperation(value = "Insere um usuário no sistema")
 	@PostMapping("/insert")
 	public ResponseEntity<Boolean> insertUsuario(@RequestBody UsuarioModel usuario) {
 		boolean loginExiste = loginValido(usuario.getLogin());
@@ -45,11 +50,12 @@ public class UsuarioController {
 		if (loginExiste) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
 		} else {
-			repository.save(new UsuarioModel(usuario.getLogin(), encoder.encode(usuario.getSenha())));
+			repository.save(new UsuarioModel(usuario.getLogin(), encoder.encode(usuario.getSenha()), usuario.getCargo()));
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
 	}
-
+	
+	@ApiOperation(value = "Valida se usuário e senha existem no sistema")
 	@PostMapping("/check")
 	public ResponseEntity<Boolean> checkUsuario(@RequestBody UsuarioModel usuario) {
 		boolean loginExiste = loginValido(usuario.getLogin());
@@ -65,7 +71,8 @@ public class UsuarioController {
 		HttpStatus status = (valid) ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
 		return ResponseEntity.status(status).body(valid);
 	}
-
+	
+	@ApiOperation(value = "Deleta um usuário de acordo com o Id")
 	@DeleteMapping("/deleteId")
 	public ResponseEntity<Boolean> deleteUsuarioId(@RequestParam int id) {
 		Optional<UsuarioModel> optUsuario = repository.findById(id);
@@ -77,7 +84,8 @@ public class UsuarioController {
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
 	}
-
+	
+	@ApiOperation(value = "Deleta um usuário de acordo com o Login")
 	@DeleteMapping("/deleteLogin")
 	public ResponseEntity<Boolean> deleteUsuarioLogin(@RequestParam String login) {
 		Optional<UsuarioModel> optUsuario = repository.findByLogin(login);
@@ -90,7 +98,8 @@ public class UsuarioController {
 		}
 
 	}
-
+	
+	@ApiOperation(value = "Atualiza as propriedades de um usuário do sistema")
 	@PutMapping("/put")
 	public ResponseEntity<Boolean> putUsuario(@RequestBody UsuarioModel usuario) {
 		boolean idExiste = idValido(usuario.getId());
@@ -119,6 +128,7 @@ public class UsuarioController {
 				if (!senhasIguais)
 					usuarioCadastrado.setSenha(encoder.encode(usuario.getSenha()));
 			}
+			usuarioCadastrado.setCargo(usuario.getCargo());
 			repository.save(usuarioCadastrado);
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
