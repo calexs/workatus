@@ -22,20 +22,22 @@ public class UsuarioModel {
 		this.senha = senha;
 		this.cargo = cargo;
 	}
-	
+
 	@ApiModelProperty(value = "Id do usuário")
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
-	
+
 	@ApiModelProperty(value = "Login do usuário")
-	@Column(unique = true)
+	@Column(unique = true, nullable = false)
 	private String login;
-	
+
 	@ApiModelProperty(value = "Senha do usuário")
+	@Column(nullable = false)
 	private String senha;
-	
+
 	@ApiModelProperty(value = "Cargo do usuário")
+	@Column(nullable = false)
 	private EnumCargo cargo;
 
 	public Integer getId() {
