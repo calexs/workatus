@@ -1,6 +1,8 @@
 package com.project.workatus.model;
 
 import java.sql.Date;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +13,8 @@ import io.swagger.annotations.ApiModelProperty;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity(name = "tbTarefa")
+@Table(name = "tbTarefa")
+@Entity
 public class TarefaModel {
 
     public TarefaModel(String comentario, String descricao, EnumStatus status, Date dataCadastro, Date dataInicio,
@@ -27,44 +30,58 @@ public class TarefaModel {
         this.usuarioFuncionario = usuarioFuncionario;
         this.projeto = projeto;
     }
+    
+    public TarefaModel() {
+    	
+    }
 
     @ApiModelProperty(value = "Id da tarefa")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(unique = true, name= "TAR_ID")
     private Integer id;
 
     @ApiModelProperty(value = "Título da tarefa")
-    @Column(unique = true)
+    @Column(unique = true, name= "TAR_TITULO")
     private String titulo;
 
     @ApiModelProperty(value = "Descrição da tarefa")
+    @Column(name="TAR_DESCRICAO")
     private String descricao;
 
     @ApiModelProperty(value = "Status da tarefa")
-    @Column(nullable = false)
+    @Column(nullable = false, name="TAR_STATUS")
     private EnumStatus status;
 
     @ApiModelProperty(value = "Data de cadastro da tarefa")
-    @Column(nullable = false)
+    @Column(nullable = false, name="TAR_DATA_CADASTRO")
     private Date dataCadastro;
 
     @ApiModelProperty(value = "Data de início da tarefa")
+    @Column(name="TAR_DATA_INICIO")
     private Date dataInicio;
 
     @ApiModelProperty(value = "Data de término da tarefa")
+    @Column(name="TAR_DATA_FINAL")
     private Date dataFinal;
 
     @ApiModelProperty(value = "Usuário administrador que cadastrou a tarefa")
-    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name="USU_ID_ADMIN")
     private UsuarioModel usuarioAdministrador;
 
     @ApiModelProperty(value = "Usuário funcionário que irá executar a tarefa")
-    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name="USU_ID_FUNC")
     private UsuarioModel usuarioFuncionario;
 
     @ApiModelProperty(value = "Projeto a qual a tarefa pertence")
-    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name="PRO_ID")
     private ProjetoModel projeto;
+    
+    @OneToMany(mappedBy="tarefa")
+    private List<PostagemModel> postagens;
 
     public Integer getId() {
         return id;

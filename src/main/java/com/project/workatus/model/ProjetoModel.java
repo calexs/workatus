@@ -1,6 +1,8 @@
 package com.project.workatus.model;
 
 import java.sql.Date;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +12,8 @@ import io.swagger.annotations.ApiModelProperty;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity(name = "tbProjeto")
+@Table(name = "tbProjeto")
+@Entity
 public class ProjetoModel {
 
     public ProjetoModel(String nome, String descricao, Date dataInicio, Date dataFinal) {
@@ -20,26 +23,35 @@ public class ProjetoModel {
         this.dataInicio = dataInicio;
         this.dataFinal = dataFinal;
     }
+    
+    public ProjetoModel() {
+    	
+    }
 
     @ApiModelProperty(value = "Id do projeto")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="PRO_ID")
     private Integer id;
 
     @ApiModelProperty(value = "Nome do projeto")
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, name="PRO_NOME")
     private String nome;
 
     @ApiModelProperty(value = "Descrição do projeto")
+    @Column(name="PRO_DESCRICAO")
     private String descricao;
 
     @ApiModelProperty(value = "Data de início do projeto")
-    @Column(nullable = false)
+    @Column(nullable = false, name="PRO_DATA_INICIO")
     private Date dataInicio;
 
     @ApiModelProperty(value = "Data final do projeto")
-    @Column(nullable = false)
+    @Column(nullable = false, name="PRO_DATA_FINAL")
     private Date dataFinal;
+    
+    @OneToMany(mappedBy="projeto")
+    private List<TarefaModel> tarefas;
 
     public Integer getId() {
         return id;
