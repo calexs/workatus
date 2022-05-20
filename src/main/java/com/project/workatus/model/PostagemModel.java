@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import io.swagger.annotations.ApiModelProperty;
 
 @Data
@@ -36,6 +38,7 @@ public class PostagemModel {
 
     @ApiModelProperty(value = "Tarefa da postagem")
     @ManyToOne
+    @JsonBackReference
     @JoinColumn(name="TAR_ID")
     private TarefaModel tarefa;
 

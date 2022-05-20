@@ -5,21 +5,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.workatus.model.ProjetoModel;
+import com.project.workatus.model.TarefaModel;
+import com.project.workatus.model.UsuarioModel;
 import com.project.workatus.repository.ProjetoRepository;
 
 import io.swagger.annotations.ApiOperation;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/projeto")
 public class ProjetoController {
-
+	
 	private final ProjetoRepository repository;
-	DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-DD");
 
 	public ProjetoController(ProjetoRepository repository) {
 		this.repository = repository;
@@ -42,8 +44,20 @@ public class ProjetoController {
 	public ProjetoModel getProjetoNome(@RequestParam String nome) {
 		return repository.findByNome(nome);
 	}
+	
+	@ApiOperation(value = "Retorna a lista de tarefas deste Projeto")
+	@GetMapping("/getTarefas")
+	public List<TarefaModel> getTarefaId(@RequestParam int id) {
+		return repository.findById(id).getTarefas();
+	}
+	
+	@ApiOperation(value = "Retorna a lista de funcionarios deste Projeto")
+	@GetMapping("/getFuncionarios")
+	public List<UsuarioModel> getFuncionarioId(@RequestParam int id) {
+		return repository.findById(id).getFuncionarios();
+	}
 
-	@ApiOperation(value = "Insere projeto no sistema")
+	@ApiOperation(value = "Insere um projeto no sistema")
 	@PostMapping("/insert")
 	public ProjetoModel insertProjeto(@RequestBody ProjetoModel projeto) {
 		boolean nomeExiste = nomeValido(projeto.getNome());
@@ -51,11 +65,11 @@ public class ProjetoController {
 		if (nomeExiste) {
 			return null;
 		} else {
-			if(projeto.getDataFinal().before(projeto.getDataInicio())) {
+			if (projeto.getDataFinal().before(projeto.getDataInicio())) {
 				return null;
 			}
-			return repository.save(new ProjetoModel(projeto.getNome(), projeto.getDescricao(), projeto.getDataInicio(),
-					projeto.getDataFinal()));
+			return repository.save(new ProjetoModel(projeto.getNome(), projeto.getDescricao(),
+					formataData(projeto.getDataInicio()), formataData(projeto.getDataFinal())));
 		}
 	}
 
@@ -104,8 +118,8 @@ public class ProjetoController {
 				} else {
 					projetoCadastrado.setNome(projeto.getNome());
 					projetoCadastrado.setDescricao(projeto.getDescricao());
-					projetoCadastrado.setDataInicio(projeto.getDataInicio());
-					projetoCadastrado.setDataFinal(projeto.getDataFinal());
+					projetoCadastrado.setDataInicio(formataData(projeto.getDataInicio()));
+					projetoCadastrado.setDataFinal(formataData(projeto.getDataFinal()));
 					return repository.save(projetoCadastrado);
 				}
 			} else {
@@ -130,6 +144,14 @@ public class ProjetoController {
 			return false;
 		else
 			return true;
+	}
+
+	public java.sql.Date formataData(java.sql.Date data) {
+		LocalDate dataLocal = data.toLocalDate();
+		LocalDate dataCorreta = dataLocal.plusDays(1);
+		Date dataRetorno = Date.from(dataCorreta.atStartOfDay(ZoneId.systemDefault()).toInstant());
+		java.sql.Date dataSQL = new java.sql.Date(dataRetorno.getTime());
+		return dataSQL;
 	}
 
 }

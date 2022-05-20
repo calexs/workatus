@@ -50,8 +50,16 @@ public class ProjetoModel {
     @Column(nullable = false, name="PRO_DATA_FINAL")
     private Date dataFinal;
     
-    @OneToMany(mappedBy="projeto")
+    @ApiModelProperty(value = "Lista de tarefas do projeto")
+    @OneToMany(mappedBy="projeto", fetch = FetchType.LAZY)
     private List<TarefaModel> tarefas;
+    
+    @ApiModelProperty(value = "Lista de usuário neste projeto")
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name="tbTarefa",
+    joinColumns = @JoinColumn(name ="pro_id"),
+    inverseJoinColumns = @JoinColumn(name="usu_id_func"))
+    private List<UsuarioModel> funcionarios;
 
     public Integer getId() {
         return id;
@@ -87,5 +95,21 @@ public class ProjetoModel {
 
     public void setDataFinal(Date dataFinal) {
         this.dataFinal = dataFinal;
+    }
+    
+    public List<TarefaModel> getTarefas() {
+    	return tarefas;
+    }
+    
+    public void setTarefa(TarefaModel tarefa) {
+    	this.tarefas.add(tarefa);
+    }
+    
+    public List<UsuarioModel> getFuncionarios() {
+    	return funcionarios;
+    }
+    
+    public void setFuncionario(UsuarioModel usuario) {
+    	this.funcionarios.add(usuario);
     }
 }

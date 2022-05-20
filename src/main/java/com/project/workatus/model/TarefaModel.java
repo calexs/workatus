@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.project.workatus.model.enums.EnumStatus;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -14,7 +16,7 @@ import io.swagger.annotations.ApiModelProperty;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "tbTarefa")
-@Entity
+@Entity(name="tbTarefa")
 public class TarefaModel {
 
     public TarefaModel(String comentario, String descricao, EnumStatus status, Date dataCadastro, Date dataInicio,
@@ -80,7 +82,9 @@ public class TarefaModel {
     @JoinColumn(name="PRO_ID")
     private ProjetoModel projeto;
     
-    @OneToMany(mappedBy="tarefa")
+    @ApiModelProperty(value = "Lista de postagens da tarefa")
+    @JsonManagedReference
+    @OneToMany(mappedBy="tarefa", fetch = FetchType.LAZY)
     private List<PostagemModel> postagens;
 
     public Integer getId() {
@@ -157,5 +161,13 @@ public class TarefaModel {
 
     public void setProjeto(ProjetoModel projeto) {
         this.projeto = projeto;
+    }
+    
+    public List<PostagemModel> getPostagens() {
+    	return postagens;
+    }
+    
+    public void setPostagem(PostagemModel postagem) {
+    	this.postagens.add(postagem);
     }
 }
