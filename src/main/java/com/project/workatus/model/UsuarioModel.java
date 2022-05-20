@@ -44,15 +44,21 @@ public class UsuarioModel {
 	@Column(nullable = false, name="USU_SENHA")
 	private String senha;
 
-	@ApiModelProperty(value = "Cargo do usuário", name="USU_CARGO")
+	@ApiModelProperty(value = "Cargo do usuário")
 	@Column(nullable = false, name="USU_CARGO")
 	private EnumCargo cargo;
 	
-	@OneToMany(mappedBy="usuarioAdministrador")
+	@ApiModelProperty(value = "Lista de tarefas que este usuário cadastrou")
+	@OneToMany(mappedBy="usuarioAdministrador", fetch = FetchType.LAZY)
     private List<TarefaModel> tarefasCadastradas;
 	
-	@OneToMany(mappedBy="usuarioFuncionario")
+	@ApiModelProperty(value = "Lista de tarefas atribuídas a este usuário")
+	@OneToMany(mappedBy="usuarioFuncionario", fetch = FetchType.LAZY)
     private List<TarefaModel> tarefasAtribuidas;
+	
+	@ApiModelProperty(value = "Lista de projetos que este usuário participa")
+	@ManyToMany(mappedBy="funcionarios", fetch = FetchType.LAZY)
+	private List<ProjetoModel> projetos;
 
 	public Integer getId() {
 		return id;
