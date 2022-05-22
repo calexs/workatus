@@ -1,22 +1,26 @@
 package com.project.workatus.model;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.project.workatus.model.enums.EnumStatus;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Table(name = "tbTarefa")
 @Entity(name="tbTarefa")
+@JsonAutoDetect(fieldVisibility = Visibility.ANY)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class TarefaModel {
 
     public TarefaModel(String comentario, String descricao, EnumStatus status, Date dataCadastro, Date dataInicio,
@@ -31,10 +35,11 @@ public class TarefaModel {
         this.usuarioAdministrador = usuarioAdministrador;
         this.usuarioFuncionario = usuarioFuncionario;
         this.projeto = projeto;
+        this.postagens = new ArrayList<PostagemModel>();
     }
     
     public TarefaModel() {
-    	
+    	this.postagens = new ArrayList<PostagemModel>();
     }
 
     @ApiModelProperty(value = "Id da tarefa")
@@ -82,9 +87,9 @@ public class TarefaModel {
     @JoinColumn(name="PRO_ID")
     private ProjetoModel projeto;
     
+    @JsonIgnore
     @ApiModelProperty(value = "Lista de postagens da tarefa")
-    @JsonManagedReference
-    @OneToMany(mappedBy="tarefa", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy="tarefa", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostagemModel> postagens;
 
     public Integer getId() {

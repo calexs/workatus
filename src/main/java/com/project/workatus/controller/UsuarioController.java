@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import com.project.workatus.model.ProjetoModel;
+import com.project.workatus.model.TarefaModel;
 import com.project.workatus.model.UsuarioModel;
 import com.project.workatus.repository.UsuarioRepository;
 
@@ -42,9 +44,31 @@ public class UsuarioController {
 		return repository.findByLogin(login);
 	}
 
+	@ApiOperation(value = "Retorna a lista de projetos que este usuário está incluso")
+	@GetMapping("/getProjetos")
+	public List<ProjetoModel> getProjetos(@RequestParam int id) {
+		return repository.findById(id).getProjetos();
+	}
+
+	@ApiOperation(value = "Retorna a lista de tarefas cadastradas por este usuário")
+	@GetMapping("/getTarefasCadastradas")
+	public List<TarefaModel> getTarefasCadastradas(@RequestParam int id) {
+		return repository.findById(id).getTarefasCadastradas();
+	}
+
+	@ApiOperation(value = "Retorna a lista de tarefas atribuídas para este usuário")
+	@GetMapping("/getTarefasAtribuidas")
+	public List<TarefaModel> getTarefasAtribuidas(@RequestParam int id) {
+		return repository.findById(id).getTarefasAtribuidas();
+	}
+
 	@ApiOperation(value = "Insere um usuário no sistema")
 	@PostMapping("/insert")
 	public UsuarioModel insertUsuario(@RequestBody UsuarioModel usuario) {
+		if(Objects.isNull(usuario.getLogin()) || Objects.isNull(usuario.getSenha()) || Objects.isNull(usuario.getCargo())) {
+			return null;
+		}
+		
 		boolean loginExiste = loginValido(usuario.getLogin());
 
 		if (loginExiste) {
@@ -58,6 +82,10 @@ public class UsuarioController {
 	@ApiOperation(value = "Valida se usuário e senha existem no sistema")
 	@PostMapping("/check")
 	public ResponseEntity<Boolean> checkUsuario(@RequestBody UsuarioModel usuario) {
+		if(Objects.isNull(usuario.getLogin()) || Objects.isNull(usuario.getSenha())){
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
+		}
+		
 		boolean loginExiste = loginValido(usuario.getLogin());
 
 		if (!loginExiste)
@@ -116,7 +144,7 @@ public class UsuarioController {
 				usuarioCadastrado.setCargo(usuario.getCargo());
 
 				return repository.save(usuarioCadastrado);
-			} else {				
+			} else {
 				return null;
 			}
 		}

@@ -1,115 +1,126 @@
 package com.project.workatus.model;
 
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+
 import io.swagger.annotations.ApiModelProperty;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Table(name = "tbProjeto")
-@Entity
+@Entity(name = "tbProjeto")
+@JsonAutoDetect(fieldVisibility = Visibility.ANY)
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class ProjetoModel {
 
-    public ProjetoModel(String nome, String descricao, Date dataInicio, Date dataFinal) {
-        super();
-        this.nome = nome;
-        this.descricao = descricao;
-        this.dataInicio = dataInicio;
-        this.dataFinal = dataFinal;
-    }
-    
-    public ProjetoModel() {
-    	
-    }
+	public ProjetoModel(String nome, String descricao, Date dataInicio, Date dataFinal) {
+		super();
+		this.nome = nome;
+		this.descricao = descricao;
+		this.dataInicio = dataInicio;
+		this.dataFinal = dataFinal;
+		this.tarefas = new ArrayList<TarefaModel>();
+		this.funcionarios = new ArrayList<UsuarioModel>();
+	}
 
-    @ApiModelProperty(value = "Id do projeto")
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="PRO_ID")
-    private Integer id;
+	public ProjetoModel() {
 
-    @ApiModelProperty(value = "Nome do projeto")
-    @Column(unique = true, nullable = false, name="PRO_NOME")
-    private String nome;
+	}
 
-    @ApiModelProperty(value = "Descrição do projeto")
-    @Column(name="PRO_DESCRICAO")
-    private String descricao;
+	@ApiModelProperty(value = "Id do projeto")
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "PRO_ID")
+	private Integer id;
 
-    @ApiModelProperty(value = "Data de início do projeto")
-    @Column(nullable = false, name="PRO_DATA_INICIO")
-    private Date dataInicio;
+	@ApiModelProperty(value = "Nome do projeto")
+	@Column(unique = true, nullable = false, name = "PRO_NOME")
+	private String nome;
 
-    @ApiModelProperty(value = "Data final do projeto")
-    @Column(nullable = false, name="PRO_DATA_FINAL")
-    private Date dataFinal;
-    
-    @ApiModelProperty(value = "Lista de tarefas do projeto")
-    @OneToMany(mappedBy="projeto", fetch = FetchType.LAZY)
-    private List<TarefaModel> tarefas;
-    
-    @ApiModelProperty(value = "Lista de usuário neste projeto")
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name="tbTarefa",
-    joinColumns = @JoinColumn(name ="pro_id"),
-    inverseJoinColumns = @JoinColumn(name="usu_id_func"))
-    private List<UsuarioModel> funcionarios;
+	@ApiModelProperty(value = "Descrição do projeto")
+	@Column(name = "PRO_DESCRICAO")
+	private String descricao;
 
-    public Integer getId() {
-        return id;
-    }
+	@ApiModelProperty(value = "Data de início do projeto")
+	@Column(nullable = false, name = "PRO_DATA_INICIO")
+	private Date dataInicio;
 
-    public String getNome() {
-        return nome;
-    }
+	@ApiModelProperty(value = "Data final do projeto")
+	@Column(nullable = false, name = "PRO_DATA_FINAL")
+	private Date dataFinal;
 
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
+	@JsonIgnore
+	@ApiModelProperty(value = "Lista de tarefas do projeto")
+	@OneToMany(mappedBy = "projeto", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<TarefaModel> tarefas;
 
-    public String getDescricao() {
-        return descricao;
-    }
+	@JsonIgnore
+	@ApiModelProperty(value = "Lista de usuários neste projeto")
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "projeto_usuario", joinColumns = @JoinColumn(name = "pro_id"), inverseJoinColumns = @JoinColumn(name = "usu_id_func"))
+	private List<UsuarioModel> funcionarios;
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
+	public Integer getId() {
+		return id;
+	}
 
-    public Date getDataInicio() {
-        return dataInicio;
-    }
+	public String getNome() {
+		return nome;
+	}
 
-    public void setDataInicio(Date dataInicio) {
-        this.dataInicio = dataInicio;
-    }
+	public void setNome(String nome) {
+		this.nome = nome;
+	}
 
-    public Date getDataFinal() {
-        return dataFinal;
-    }
+	public String getDescricao() {
+		return descricao;
+	}
 
-    public void setDataFinal(Date dataFinal) {
-        this.dataFinal = dataFinal;
-    }
-    
-    public List<TarefaModel> getTarefas() {
-    	return tarefas;
-    }
-    
-    public void setTarefa(TarefaModel tarefa) {
-    	this.tarefas.add(tarefa);
-    }
-    
-    public List<UsuarioModel> getFuncionarios() {
-    	return funcionarios;
-    }
-    
-    public void setFuncionario(UsuarioModel usuario) {
-    	this.funcionarios.add(usuario);
-    }
+	public void setDescricao(String descricao) {
+		this.descricao = descricao;
+	}
+
+	public Date getDataInicio() {
+		return dataInicio;
+	}
+
+	public void setDataInicio(Date dataInicio) {
+		this.dataInicio = dataInicio;
+	}
+
+	public Date getDataFinal() {
+		return dataFinal;
+	}
+
+	public void setDataFinal(Date dataFinal) {
+		this.dataFinal = dataFinal;
+	}
+
+	public List<TarefaModel> getTarefas() {
+		return tarefas;
+	}
+
+	public void setTarefas(TarefaModel tarefa) {
+		this.tarefas.add(tarefa);
+	}
+	
+	public List<UsuarioModel> getFuncionarios() {
+		return funcionarios;
+	}
+
+	public void setFuncionarios(UsuarioModel usuario) {
+		this.funcionarios.add(usuario);
+	}
+
 }
