@@ -1,20 +1,22 @@
 package com.project.workatus.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 
 import io.swagger.annotations.ApiModelProperty;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Table(name = "tbPostagem")
-@Entity
+@Entity(name="tbPostagem")
+@JsonAutoDetect(fieldVisibility = Visibility.ANY)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PostagemModel {
 
     public PostagemModel(String comentario, TarefaModel tarefa) {
@@ -38,9 +40,13 @@ public class PostagemModel {
 
     @ApiModelProperty(value = "Tarefa da postagem")
     @ManyToOne
-    @JsonBackReference
     @JoinColumn(name="TAR_ID")
     private TarefaModel tarefa;
+    
+    @ApiModelProperty(value = "Usuário da postagem")
+    @ManyToOne
+    @JoinColumn(name="USU_ID")
+    private UsuarioModel usuario;
 
     public Integer getId() {
         return id;
@@ -60,6 +66,14 @@ public class PostagemModel {
 
     public void setTarefa(TarefaModel tarefa) {
         this.tarefa = tarefa;
+    }
+    
+    public UsuarioModel getUsuario() {
+    	return usuario;
+    }
+    
+    public void setUsuario(UsuarioModel usuario) {
+    	this.usuario = usuario;
     }
 
 }

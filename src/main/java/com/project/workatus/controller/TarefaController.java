@@ -16,9 +16,11 @@ import com.project.workatus.repository.UsuarioRepository;
 
 import io.swagger.annotations.ApiOperation;
 
-import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.time.LocalDate;
@@ -31,9 +33,11 @@ public class TarefaController {
 	private final TarefaRepository repository;
 	private final UsuarioRepository repositoryUsuario;
 	private final ProjetoRepository repositoryProjeto;
-	java.sql.Date dataAtual = new java.sql.Date(Calendar.getInstance().getTime().getTime());
+	long millis = System.currentTimeMillis();
+	java.sql.Date dataAtual = new java.sql.Date(millis);
 
-	public TarefaController(TarefaRepository repository, UsuarioRepository repositoryUsuario, ProjetoRepository repositoryProjeto) {
+	public TarefaController(TarefaRepository repository, UsuarioRepository repositoryUsuario,
+			ProjetoRepository repositoryProjeto) {
 		this.repository = repository;
 		this.repositoryUsuario = repositoryUsuario;
 		this.repositoryProjeto = repositoryProjeto;
@@ -56,7 +60,7 @@ public class TarefaController {
 	public TarefaModel getTarefaTitulo(@RequestParam String titulo) {
 		return repository.findByTitulo(titulo);
 	}
-	
+
 	@ApiOperation(value = "Retorna a lista de postagens desta Tarefa")
 	@GetMapping("/getPostagens")
 	public List<PostagemModel> getPostagensId(@RequestParam int id) {
@@ -65,49 +69,63 @@ public class TarefaController {
 
 	@ApiOperation(value = "Insere uma tarefa no sistema")
 	@PostMapping("/insert")
-	public TarefaModel insertTarefa(@RequestBody TarefaModel tarefa) {		
+	public TarefaModel insertTarefa(@RequestBody TarefaModel tarefa) {
+		TarefaModel cadastroTarefa = new TarefaModel();
+
+		if (Objects.isNull(tarefa.getTitulo()) || Objects.isNull(tarefa.getUsuarioAdministrador().getId())
+				|| Objects.isNull(tarefa.getUsuarioFuncionario().getId()) || Objects.isNull(tarefa.getProjeto().getId())
+				|| Objects.isNull(tarefa.getDataFinal()) || Objects.isNull(tarefa.getDataInicio())) {
+			return null;
+		}
+
 		boolean tituloExiste = tituloValido(tarefa.getTitulo());
 		boolean idUsuarioAdministradorExiste = idUsuarioValido(tarefa.getUsuarioAdministrador().getId());
 		boolean idUsuarioFuncionarioExiste = idUsuarioValido(tarefa.getUsuarioFuncionario().getId());
 		boolean idProjetoExiste = idProjetoValido(tarefa.getProjeto().getId());
 
-		if (tituloExiste || !idUsuarioAdministradorExiste || !idUsuarioFuncionarioExiste || !idProjetoExiste) {
+		if (tituloExiste || !idUsuarioAdministradorExiste || !idUsuarioFuncionarioExiste || !idProjetoExiste
+				|| tarefa.getDataFinal().before(tarefa.getDataInicio())) {
 			return null;
-		} else {		
-			if (tarefa.getDataFinal().before(tarefa.getDataInicio())) {
-				return null;
-			}
-
-			Optional<UsuarioModel> usuarioAdministrador = repositoryUsuario.findById(tarefa.getUsuarioAdministrador().getId());
+		} else {
+			Optional<UsuarioModel> usuarioAdministrador = repositoryUsuario
+					.findById(tarefa.getUsuarioAdministrador().getId());
 			UsuarioModel usuarioAdm = usuarioAdministrador.get();
-			tarefa.setUsuarioAdministrador(usuarioAdm);
-			
-			if(!tarefa.getUsuarioAdministrador().getCargo().equals(EnumCargo.Administrador)) {
+
+			if (!usuarioAdm.getCargo().equals(EnumCargo.Administrador))
 				return null;
-			}
-			
-			Optional<UsuarioModel> usuarioFuncionario = repositoryUsuario.findById(tarefa.getUsuarioFuncionario().getId());
-			UsuarioModel usuarioFunc = usuarioFuncionario.get();	
-			tarefa.setUsuarioFuncionario(usuarioFunc);			
-			
+			else
+				cadastroTarefa.setUsuarioAdministrador(usuarioAdm);
+
+			Optional<UsuarioModel> usuarioFuncionario = repositoryUsuario
+					.findById(tarefa.getUsuarioFuncionario().getId());
+			UsuarioModel usuarioFunc = usuarioFuncionario.get();
+			cadastroTarefa.setUsuarioFuncionario(usuarioFunc);
+
 			Optional<ProjetoModel> projetoOpt = repositoryProjeto.findById(tarefa.getProjeto().getId());
 			ProjetoModel projeto = projetoOpt.get();
-			
-			
-			tarefa.setDataCadastro(dataAtual);
-			tarefa.setDataFinal(formataData(tarefa.getDataFinal()));
-			tarefa.setDataInicio(formataData(tarefa.getDataInicio()));
-			tarefa.setDescricao(tarefa.getDescricao());
-			if (Objects.isNull(tarefa.getStatus())) {
-				tarefa.setStatus(EnumStatus.Pendente);
-			} else {
-				tarefa.setStatus(tarefa.getStatus());
-			}
-			tarefa.setTitulo(tarefa.getTitulo());
-			tarefa.setProjeto(projeto);
-			projeto.setTarefa(tarefa);
-			tarefa.getProjeto().setFuncionario(usuarioFunc);
-			return repository.save(tarefa);
+			cadastroTarefa.setProjeto(projeto);
+
+			if (!projeto.getFuncionarios().contains(usuarioFunc))
+				projeto.setFuncionarios(usuarioFunc);
+
+			if (!usuarioFunc.getProjetos().contains(projeto))
+				usuarioFunc.setProjetos(projeto);
+
+			cadastroTarefa.setDataCadastro(dataAtual);
+			cadastroTarefa.setDataFinal(formataData(tarefa.getDataFinal()));
+			cadastroTarefa.setDataInicio(formataData(tarefa.getDataInicio()));
+			cadastroTarefa.setDescricao(tarefa.getDescricao());
+			if (Objects.isNull(tarefa.getStatus()))
+				cadastroTarefa.setStatus(EnumStatus.Pendente);
+			else
+				cadastroTarefa.setStatus(tarefa.getStatus());
+
+			cadastroTarefa.setTitulo(tarefa.getTitulo());
+			projeto.setTarefas(cadastroTarefa);
+
+			usuarioFunc.setTarefasAtribuidas(cadastroTarefa);
+			usuarioAdm.setTarefasCadastradas(cadastroTarefa);
+			return repository.save(cadastroTarefa);
 		}
 	}
 
@@ -118,7 +136,36 @@ public class TarefaController {
 
 		if (Objects.isNull(tarefa)) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
-		} else {
+		} else {			
+			List<ProjetoModel> projetos = repositoryProjeto.findAll();
+			for (ProjetoModel projeto : projetos) {
+				if (projeto.getTarefas().contains(tarefa)) {
+					projeto.getTarefas().remove(tarefa);
+				}
+				if(projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
+					projeto.getFuncionarios().remove(tarefa.getUsuarioFuncionario());
+				}
+			}
+
+			List<UsuarioModel> usuariosFunc = repositoryUsuario.findAll();
+			for (UsuarioModel usuarioFunc : usuariosFunc) {
+				if (usuarioFunc.getTarefasAtribuidas().contains(tarefa)) {
+					usuarioFunc.getTarefasAtribuidas().remove(tarefa);
+				}
+				if(usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
+					usuarioFunc.getProjetos().remove(tarefa.getProjeto());
+				}
+			}
+
+			List<UsuarioModel> usuariosAdm = repositoryUsuario.findAll();
+			for (UsuarioModel usuarioAdm : usuariosAdm) {
+				if (usuarioAdm.getTarefasCadastradas().contains(tarefa)) {
+					usuarioAdm.getTarefasCadastradas().remove(tarefa);
+				} else if (usuarioAdm.getTarefasAtribuidas().contains(tarefa)) {
+					usuarioAdm.getTarefasAtribuidas().remove(tarefa);
+				}
+			}
+			
 			repository.deleteById(id);
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
@@ -132,6 +179,34 @@ public class TarefaController {
 		if (Objects.isNull(tarefa)) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
 		} else {
+			List<ProjetoModel> projetos = repositoryProjeto.findAll();
+			for (ProjetoModel projeto : projetos) {
+				if (projeto.getTarefas().contains(tarefa)) {
+					projeto.getTarefas().remove(tarefa);
+				}
+				if(projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
+					projeto.getFuncionarios().remove(tarefa.getUsuarioFuncionario());
+				}
+			}
+
+			List<UsuarioModel> usuariosFunc = repositoryUsuario.findAll();
+			for (UsuarioModel usuarioFunc : usuariosFunc) {
+				if (usuarioFunc.getTarefasAtribuidas().contains(tarefa)) {
+					usuarioFunc.getTarefasAtribuidas().remove(tarefa);
+				}
+				if(usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
+					usuarioFunc.getProjetos().remove(tarefa.getProjeto());
+				}
+			}
+
+			List<UsuarioModel> usuariosAdm = repositoryUsuario.findAll();
+			for (UsuarioModel usuarioAdm : usuariosAdm) {
+				if (usuarioAdm.getTarefasCadastradas().contains(tarefa)) {
+					usuarioAdm.getTarefasCadastradas().remove(tarefa);
+				} else if (usuarioAdm.getTarefasAtribuidas().contains(tarefa)) {
+					usuarioAdm.getTarefasAtribuidas().remove(tarefa);
+				}
+			}
 			repository.deleteById(tarefa.getId());
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
@@ -141,6 +216,13 @@ public class TarefaController {
 	@ApiOperation(value = "Atualiza as propriedades de uma tarefa do sistema")
 	@PutMapping("/put")
 	public TarefaModel putTarefa(@RequestBody TarefaModel tarefa) {
+		if (Objects.isNull(tarefa.getId()) || Objects.isNull(tarefa.getTitulo())
+				|| Objects.isNull(tarefa.getUsuarioAdministrador().getId())
+				|| Objects.isNull(tarefa.getUsuarioFuncionario().getId()) || Objects.isNull(tarefa.getProjeto().getId())
+				|| Objects.isNull(tarefa.getDataFinal()) || Objects.isNull(tarefa.getDataInicio())) {
+			return null;
+		}
+
 		boolean idExiste = idTarefaValido(tarefa.getId());
 		boolean idUsuarioAdministradorExiste = idUsuarioValido(tarefa.getUsuarioAdministrador().getId());
 		boolean idUsuarioFuncionarioExiste = idUsuarioValido(tarefa.getUsuarioFuncionario().getId());
@@ -154,39 +236,92 @@ public class TarefaController {
 			if (Objects.isNull(tarefaComMesmoTitulo) || tarefaComMesmoTitulo.getId() == tarefa.getId()) {
 				TarefaModel tarefaCadastrada = repository.findById(tarefa.getId()).get();
 
+				HashMap<Integer, Integer> dict1 = new HashMap<Integer, Integer>();
+				for (ProjetoModel pro : tarefaCadastrada.getUsuarioFuncionario().getProjetos()) {
+					dict1.put(pro.getId(), tarefaCadastrada.getUsuarioFuncionario().getId());
+				}
+
 				if (tarefa.getDataFinal().before(tarefa.getDataInicio())) {
 					return null;
-				} else {													
-					Optional<UsuarioModel> usuarioAdministrador = repositoryUsuario.findById(tarefa.getUsuarioAdministrador().getId());
+				} else {
+					Optional<UsuarioModel> usuarioAdministrador = repositoryUsuario
+							.findById(tarefa.getUsuarioAdministrador().getId());
 					UsuarioModel usuarioAdm = usuarioAdministrador.get();
-					tarefaCadastrada.setUsuarioAdministrador(usuarioAdm);
-										
-					if(!tarefaCadastrada.getUsuarioAdministrador().getCargo().equals(EnumCargo.Administrador)) {
+
+					if (!usuarioAdm.getCargo().equals(EnumCargo.Administrador))
 						return null;
-					}
-					
-					Optional<UsuarioModel> usuarioFuncionario = repositoryUsuario.findById(tarefa.getUsuarioFuncionario().getId());
+					else
+						tarefaCadastrada.setUsuarioAdministrador(usuarioAdm);
+
+					Optional<UsuarioModel> usuarioFuncionario = repositoryUsuario
+							.findById(tarefa.getUsuarioFuncionario().getId());
 					UsuarioModel usuarioFunc = usuarioFuncionario.get();
 					tarefaCadastrada.setUsuarioFuncionario(usuarioFunc);
-										
+
 					Optional<ProjetoModel> projetoOpt = repositoryProjeto.findById(tarefa.getProjeto().getId());
-					ProjetoModel projeto = projetoOpt.get();				
-					
+					ProjetoModel projeto = projetoOpt.get();
+					tarefaCadastrada.setProjeto(projeto);
+
+					if (!projeto.getFuncionarios().contains(usuarioFunc))
+						projeto.setFuncionarios(usuarioFunc);
+
+					if (!usuarioFunc.getProjetos().contains(projeto)) {
+						usuarioFunc.setProjetos(projeto);
+					}
+
 					tarefaCadastrada.setDataCadastro(dataAtual);
 					tarefaCadastrada.setDataFinal(formataData(tarefa.getDataFinal()));
 					tarefaCadastrada.setDataInicio(formataData(tarefa.getDataInicio()));
 					tarefaCadastrada.setDescricao(tarefa.getDescricao());
-					if (!Objects.isNull(tarefa.getStatus())) {
+					if (!Objects.isNull(tarefa.getStatus()))
 						tarefaCadastrada.setStatus(tarefa.getStatus());
-					}
+
 					tarefaCadastrada.setTitulo(tarefa.getTitulo());
-					tarefaCadastrada.setProjeto(projeto);					
+
+					if (!projeto.getTarefas().contains(tarefaCadastrada))
+						projeto.setTarefas(tarefaCadastrada);
+
+					if (!usuarioFunc.getTarefasAtribuidas().contains(tarefaCadastrada))
+						usuarioFunc.setTarefasAtribuidas(tarefaCadastrada);
+
+					if (!usuarioAdm.getTarefasCadastradas().contains(tarefaCadastrada))
+						usuarioAdm.setTarefasCadastradas(tarefaCadastrada);
+
+					HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
+					for (TarefaModel tar : repository.findAll()) {
+						dict.put(tar.getProjeto().getId(), tar.getUsuarioFuncionario().getId());
+					}
+
+					for (Map.Entry<Integer, Integer> entryTarefa : dict.entrySet()) {
+						if (dict1.containsValue(entryTarefa.getValue())) {
+							List<Integer> listaCodigoProjeto = new ArrayList<Integer>();
+							for (ProjetoModel project : usuarioFunc.getProjetos()) {
+								listaCodigoProjeto.add(project.getId());
+							}
+							for (Integer codigoProjeto : listaCodigoProjeto) {
+								if (!dict.containsKey(codigoProjeto)) {
+									usuarioFunc.getProjetos().remove(repositoryProjeto.findById(codigoProjeto).get());
+									projeto.getFuncionarios().remove(repositoryUsuario.findById(entryTarefa.getValue()).get());
+								}
+							}
+						} else if(dict1.containsKey(entryTarefa.getKey())) {
+							List<Integer> listaCodigoUsuario = new ArrayList<Integer>();
+							for (UsuarioModel usu : projeto.getFuncionarios()) {
+								listaCodigoUsuario.add(usu.getId());
+							}
+							for (Integer codigoUsuario : listaCodigoUsuario) {
+								if (!dict.containsValue(codigoUsuario)) {
+									projeto.getFuncionarios().remove(repositoryUsuario.findById(codigoUsuario).get());
+								}
+							}
+						}
+					}
 					return repository.save(tarefaCadastrada);
 				}
-			} else {
+			} else
 				return null;
-			}
 		}
+
 	}
 
 	public boolean idTarefaValido(int id) {
@@ -197,7 +332,7 @@ public class TarefaController {
 		else
 			return true;
 	}
-	
+
 	public boolean idUsuarioValido(int id) {
 		UsuarioModel usuario = repositoryUsuario.findById(id);
 
@@ -206,7 +341,7 @@ public class TarefaController {
 		else
 			return true;
 	}
-	
+
 	public boolean idProjetoValido(int id) {
 		ProjetoModel projeto = repositoryProjeto.findById(id);
 

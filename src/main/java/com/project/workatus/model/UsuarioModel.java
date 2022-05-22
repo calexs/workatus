@@ -1,22 +1,27 @@
 package com.project.workatus.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.project.workatus.model.enums.EnumCargo;
 
 import io.swagger.annotations.ApiModelProperty;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Table(name = "tbUsuario")
-@Entity
+@Entity(name="tbUsuario")
+@JsonAutoDetect(fieldVisibility = Visibility.ANY)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class UsuarioModel {
 
 	public UsuarioModel(String login, String senha, EnumCargo cargo) {
@@ -24,6 +29,10 @@ public class UsuarioModel {
 		this.login = login;
 		this.senha = senha;
 		this.cargo = cargo;
+		this.tarefasCadastradas = new ArrayList<TarefaModel>();
+		this.tarefasAtribuidas = new ArrayList<TarefaModel>();
+		this.projetos = new ArrayList<ProjetoModel>();
+		this.postagens = new ArrayList<PostagemModel>();
 	}
 	
 	public UsuarioModel() {
@@ -48,17 +57,25 @@ public class UsuarioModel {
 	@Column(nullable = false, name="USU_CARGO")
 	private EnumCargo cargo;
 	
+	@JsonIgnore
 	@ApiModelProperty(value = "Lista de tarefas que este usuário cadastrou")
-	@OneToMany(mappedBy="usuarioAdministrador", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy="usuarioAdministrador", fetch = FetchType.EAGER)	
     private List<TarefaModel> tarefasCadastradas;
 	
+	@JsonIgnore
 	@ApiModelProperty(value = "Lista de tarefas atribuídas a este usuário")
-	@OneToMany(mappedBy="usuarioFuncionario", fetch = FetchType.LAZY)
-    private List<TarefaModel> tarefasAtribuidas;
+	@OneToMany(mappedBy="usuarioFuncionario", fetch = FetchType.LAZY)	
+    private List<TarefaModel> tarefasAtribuidas;	
 	
+	@JsonIgnore
+	@ApiModelProperty(value = "Lista de postagens que este usuário fez")
+	@OneToMany(mappedBy="usuario", fetch = FetchType.EAGER)
+	private List<PostagemModel> postagens;	
+	
+	@JsonIgnore
 	@ApiModelProperty(value = "Lista de projetos que este usuário participa")
-	@ManyToMany(mappedBy="funcionarios", fetch = FetchType.LAZY)
-	private List<ProjetoModel> projetos;
+	@ManyToMany(mappedBy="funcionarios", fetch = FetchType.EAGER)
+	private List<ProjetoModel> projetos;	
 
 	public Integer getId() {
 		return id;
@@ -86,6 +103,38 @@ public class UsuarioModel {
 
 	public void setCargo(EnumCargo cargo) {
 		this.cargo = cargo;
+	}
+	
+	public void setTarefasCadastradas(TarefaModel tarefa) {
+		this.tarefasCadastradas.add(tarefa);
+	}
+	
+	public List<TarefaModel> getTarefasCadastradas(){
+		return tarefasCadastradas;
+	}
+	
+	public void setTarefasAtribuidas(TarefaModel tarefa) {
+		this.tarefasAtribuidas.add(tarefa);
+	}
+	
+	public List<TarefaModel> getTarefasAtribuidas(){
+		return tarefasAtribuidas;
+	}
+	
+	public void setPostagens(PostagemModel postagem) {
+		this.postagens.add(postagem);
+	}
+	
+	public List<PostagemModel> getPostagens(){
+		return postagens;
+	}
+	
+	public void setProjetos(ProjetoModel projeto) {
+		this.projetos.add(projeto);
+	}
+	
+	public List<ProjetoModel> getProjetos(){
+		return projetos;
 	}
 
 }

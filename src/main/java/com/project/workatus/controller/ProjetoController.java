@@ -8,6 +8,7 @@ import com.project.workatus.model.ProjetoModel;
 import com.project.workatus.model.TarefaModel;
 import com.project.workatus.model.UsuarioModel;
 import com.project.workatus.repository.ProjetoRepository;
+import com.project.workatus.repository.UsuarioRepository;
 
 import io.swagger.annotations.ApiOperation;
 
@@ -20,11 +21,13 @@ import java.time.ZoneId;
 @RestController
 @RequestMapping("/api/projeto")
 public class ProjetoController {
-	
-	private final ProjetoRepository repository;
 
-	public ProjetoController(ProjetoRepository repository) {
+	private final ProjetoRepository repository;
+	private final UsuarioRepository repositoryUsuario;
+
+	public ProjetoController(ProjetoRepository repository, UsuarioRepository repositoryUsuario) {
 		this.repository = repository;
+		this.repositoryUsuario = repositoryUsuario;
 	}
 
 	@ApiOperation(value = "Retorna todos os projetos cadastrados")
@@ -44,13 +47,13 @@ public class ProjetoController {
 	public ProjetoModel getProjetoNome(@RequestParam String nome) {
 		return repository.findByNome(nome);
 	}
-	
+
 	@ApiOperation(value = "Retorna a lista de tarefas deste Projeto")
 	@GetMapping("/getTarefas")
 	public List<TarefaModel> getTarefaId(@RequestParam int id) {
 		return repository.findById(id).getTarefas();
 	}
-	
+
 	@ApiOperation(value = "Retorna a lista de funcionarios deste Projeto")
 	@GetMapping("/getFuncionarios")
 	public List<UsuarioModel> getFuncionarioId(@RequestParam int id) {
@@ -62,14 +65,12 @@ public class ProjetoController {
 	public ProjetoModel insertProjeto(@RequestBody ProjetoModel projeto) {
 		boolean nomeExiste = nomeValido(projeto.getNome());
 
-		if (nomeExiste) {
+		if (nomeExiste || Objects.isNull(projeto.getDataFinal()) || Objects.isNull(projeto.getDataInicio())
+				|| projeto.getDataFinal().before(projeto.getDataInicio())) {
 			return null;
 		} else {
-			if (projeto.getDataFinal().before(projeto.getDataInicio())) {
-				return null;
-			}
-			return repository.save(new ProjetoModel(projeto.getNome(), projeto.getDescricao(),
-					formataData(projeto.getDataInicio()), formataData(projeto.getDataFinal())));
+			return repository.save(new ProjetoModel(projeto.getNome(), projeto.getDescricao(), formataData(projeto.getDataInicio()),
+					formataData(projeto.getDataFinal())));
 		}
 	}
 
@@ -81,6 +82,12 @@ public class ProjetoController {
 		if (Objects.isNull(projeto)) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
 		} else {
+			List<UsuarioModel> usuarios = repositoryUsuario.findAll();
+			for(UsuarioModel usuario : usuarios) {
+				if(usuario.getProjetos().contains(projeto)) {
+					usuario.getProjetos().remove(projeto);
+				}
+			}			
 			repository.deleteById(id);
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
@@ -94,6 +101,12 @@ public class ProjetoController {
 		if (Objects.isNull(projeto)) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
 		} else {
+			List<UsuarioModel> usuarios = repositoryUsuario.findAll();
+			for(UsuarioModel usuario : usuarios) {
+				if(usuario.getProjetos().contains(projeto)) {
+					usuario.getProjetos().remove(projeto);
+				}
+			}			
 			repository.deleteById(projeto.getId());
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
@@ -105,7 +118,8 @@ public class ProjetoController {
 	public ProjetoModel putProjeto(@RequestBody ProjetoModel projeto) {
 		boolean idExiste = idValido(projeto.getId());
 
-		if (!idExiste) {
+		if (!idExiste || Objects.isNull(projeto.getDataFinal()) || Objects.isNull(projeto.getDataInicio())
+				|| projeto.getDataFinal().before(projeto.getDataInicio())) {
 			return null;
 		} else {
 			ProjetoModel projetoComMesmoNome = repository.findByNome(projeto.getNome());
@@ -113,19 +127,16 @@ public class ProjetoController {
 			if (Objects.isNull(projetoComMesmoNome) || projetoComMesmoNome.getId() == projeto.getId()) {
 				ProjetoModel projetoCadastrado = repository.findById(projeto.getId()).get();
 
-				if (projeto.getDataFinal().before(projeto.getDataInicio())) {
-					return null;
-				} else {
-					projetoCadastrado.setNome(projeto.getNome());
-					projetoCadastrado.setDescricao(projeto.getDescricao());
-					projetoCadastrado.setDataInicio(formataData(projeto.getDataInicio()));
-					projetoCadastrado.setDataFinal(formataData(projeto.getDataFinal()));
-					return repository.save(projetoCadastrado);
-				}
+				projetoCadastrado.setNome(projeto.getNome());
+				projetoCadastrado.setDescricao(projeto.getDescricao());
+				projetoCadastrado.setDataInicio(formataData(projeto.getDataInicio()));
+				projetoCadastrado.setDataFinal(formataData(projeto.getDataFinal()));
+				return repository.save(projetoCadastrado);
 			} else {
 				return null;
 			}
 		}
+
 	}
 
 	public boolean idValido(int id) {
