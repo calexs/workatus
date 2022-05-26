@@ -8,10 +8,12 @@ import com.project.workatus.model.ProjetoModel;
 import com.project.workatus.model.TarefaModel;
 import com.project.workatus.model.UsuarioModel;
 import com.project.workatus.repository.ProjetoRepository;
+import com.project.workatus.repository.TarefaRepository;
 import com.project.workatus.repository.UsuarioRepository;
 
 import io.swagger.annotations.ApiOperation;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -24,44 +26,53 @@ public class ProjetoController {
 
 	private final ProjetoRepository repository;
 	private final UsuarioRepository repositoryUsuario;
+	private final TarefaRepository repositoryTarefa;
 
-	public ProjetoController(ProjetoRepository repository, UsuarioRepository repositoryUsuario) {
+	public ProjetoController(ProjetoRepository repository, UsuarioRepository repositoryUsuario, TarefaRepository repositoryTarefa) {
 		this.repository = repository;
 		this.repositoryUsuario = repositoryUsuario;
+		this.repositoryTarefa = repositoryTarefa;
 	}
 
 	@ApiOperation(value = "Retorna todos os projetos cadastrados")
-	@GetMapping("/getAll")
+	@GetMapping
 	public List<ProjetoModel> getAll() {
 		return repository.findAll();
 	}
 
 	@ApiOperation(value = "Retorna um projeto de acordo com o Id")
-	@GetMapping("/getId")
+	@GetMapping("/id")
 	public ProjetoModel getProjetoId(@RequestParam int id) {
 		return repository.findById(id);
 	}
 
 	@ApiOperation(value = "Retorna um projeto de acordo com o Nome")
-	@GetMapping("/getNome")
+	@GetMapping("/nome")
 	public ProjetoModel getProjetoNome(@RequestParam String nome) {
 		return repository.findByNome(nome);
 	}
 
 	@ApiOperation(value = "Retorna a lista de tarefas deste Projeto")
-	@GetMapping("/getTarefas")
+	@GetMapping("/tarefas")
 	public List<TarefaModel> getTarefaId(@RequestParam int id) {
 		return repository.findById(id).getTarefas();
 	}
 
 	@ApiOperation(value = "Retorna a lista de funcionarios deste Projeto")
-	@GetMapping("/getFuncionarios")
+	@GetMapping("/funcionarios")
 	public List<UsuarioModel> getFuncionarioId(@RequestParam int id) {
-		return repository.findById(id).getFuncionarios();
+		List<TarefaModel> listaTarefas = repositoryTarefa.findAll();
+		List<UsuarioModel> usuariosProjeto = new ArrayList<UsuarioModel>();
+		
+		for(TarefaModel tarefa : listaTarefas) {
+			if(tarefa.getProjeto().getId().equals(id) && !usuariosProjeto.contains(tarefa.getUsuarioFuncionario()))
+			usuariosProjeto.add(tarefa.getUsuarioFuncionario());
+		}	
+		return usuariosProjeto;
 	}
 
 	@ApiOperation(value = "Insere um projeto no sistema")
-	@PostMapping("/insert")
+	@PostMapping
 	public ProjetoModel insertProjeto(@RequestBody ProjetoModel projeto) {
 		boolean nomeExiste = nomeValido(projeto.getNome());
 
@@ -75,7 +86,7 @@ public class ProjetoController {
 	}
 
 	@ApiOperation(value = "Deleta um projeto de acordo com o Id")
-	@DeleteMapping("/deleteId")
+	@DeleteMapping("/id")
 	public ResponseEntity<Boolean> deleteProjetoId(@RequestParam int id) {
 		ProjetoModel projeto = repository.findById(id);
 
@@ -94,7 +105,7 @@ public class ProjetoController {
 	}
 
 	@ApiOperation(value = "Deleta um projeto de acordo com o Nome")
-	@DeleteMapping("/deleteNome")
+	@DeleteMapping("/nome")
 	public ResponseEntity<Boolean> deleteProjetoNome(@RequestParam String nome) {
 		ProjetoModel projeto = repository.findByNome(nome);
 
@@ -114,7 +125,7 @@ public class ProjetoController {
 	}
 
 	@ApiOperation(value = "Atualiza as propriedades de um projeto do sistema")
-	@PutMapping("/put")
+	@PutMapping
 	public ProjetoModel putProjeto(@RequestBody ProjetoModel projeto) {
 		boolean idExiste = idValido(projeto.getId());
 
