@@ -33,19 +33,19 @@ public class PostagemController {
 	}
 
 	@ApiOperation(value = "Retorna todos as postagens cadastradas")
-	@GetMapping("/getAll")
+	@GetMapping
 	public List<PostagemModel> getAll() {
 		return repository.findAll();
 	}
 
 	@ApiOperation(value = "Retorna uma postagem de acordo com o Id")
-	@GetMapping("/getId")
+	@GetMapping("/id")
 	public PostagemModel getPostagemId(@RequestParam int id) {
 		return repository.findById(id);
 	}
 
 	@ApiOperation(value = "Insere uma postagem no sistema")
-	@PostMapping("/insert")
+	@PostMapping
 	public PostagemModel insertPostagem(@RequestBody PostagemModel postagem) {
 		boolean idTarefaExiste = idTarefaValido(postagem.getTarefa().getId());
 		boolean idUsuarioExiste = idUsuarioValido(postagem.getUsuario().getId());
@@ -73,7 +73,7 @@ public class PostagemController {
 	}
 
 	@ApiOperation(value = "Deleta uma postagem de acordo com o Id")
-	@DeleteMapping("/deleteId")
+	@DeleteMapping("/id")
 	public ResponseEntity<Boolean> deletePostagemId(@RequestParam int id) {
 		PostagemModel postagem = repository.findById(id);
 

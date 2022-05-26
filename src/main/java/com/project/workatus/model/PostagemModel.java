@@ -40,12 +40,12 @@ public class PostagemModel {
 
     @ApiModelProperty(value = "Tarefa da postagem")
     @ManyToOne
-    @JoinColumn(name="TAR_ID")
+    @JoinColumn(nullable = false, name="TAR_ID")
     private TarefaModel tarefa;
     
     @ApiModelProperty(value = "Usuário da postagem")
     @ManyToOne
-    @JoinColumn(name="USU_ID")
+    @JoinColumn(nullable = false, name="USU_ID")
     private UsuarioModel usuario;
 
     public Integer getId() {

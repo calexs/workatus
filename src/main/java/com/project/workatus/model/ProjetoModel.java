@@ -12,6 +12,7 @@ import javax.persistence.*;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 
 import io.swagger.annotations.ApiModelProperty;
@@ -35,7 +36,8 @@ public class ProjetoModel {
 	}
 
 	public ProjetoModel() {
-
+		this.tarefas = new ArrayList<TarefaModel>();
+		this.funcionarios = new ArrayList<UsuarioModel>();
 	}
 
 	@ApiModelProperty(value = "Id do projeto")
@@ -67,8 +69,8 @@ public class ProjetoModel {
 
 	@JsonIgnore
 	@ApiModelProperty(value = "Lista de usuários neste projeto")
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "projeto_usuario", joinColumns = @JoinColumn(name = "pro_id"), inverseJoinColumns = @JoinColumn(name = "usu_id_func"))
+	@JsonInclude()
+	@Transient
 	private List<UsuarioModel> funcionarios;
 
 	public Integer getId() {
@@ -114,13 +116,19 @@ public class ProjetoModel {
 	public void setTarefas(TarefaModel tarefa) {
 		this.tarefas.add(tarefa);
 	}
-	
+
 	public List<UsuarioModel> getFuncionarios() {
 		return funcionarios;
 	}
 
 	public void setFuncionarios(UsuarioModel usuario) {
-		this.funcionarios.add(usuario);
+		if (!this.funcionarios.contains(usuario)) {
+			this.funcionarios.add(usuario);
+		}
+	}
+
+	public void removeFuncionarios(UsuarioModel usuario) {
+		this.funcionarios.remove(usuario);
 	}
 
 }

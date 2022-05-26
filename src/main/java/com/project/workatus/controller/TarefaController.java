@@ -16,11 +16,8 @@ import com.project.workatus.repository.UsuarioRepository;
 
 import io.swagger.annotations.ApiOperation;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.time.LocalDate;
@@ -44,49 +41,47 @@ public class TarefaController {
 	}
 
 	@ApiOperation(value = "Retorna todas as tarefas cadastradas")
-	@GetMapping("/getAll")
+	@GetMapping
 	public List<TarefaModel> getAll() {
 		return repository.findAll();
 	}
 
 	@ApiOperation(value = "Retorna uma tarefa de acordo com o Id")
-	@GetMapping("/getId")
+	@GetMapping("/id")
 	public TarefaModel getTarefaId(@RequestParam int id) {
 		return repository.findById(id);
 	}
 
 	@ApiOperation(value = "Retorna uma tarefa de acordo com o Titulo")
-	@GetMapping("/getTitulo")
+	@GetMapping("/titulo")
 	public TarefaModel getTarefaTitulo(@RequestParam String titulo) {
 		return repository.findByTitulo(titulo);
 	}
 
 	@ApiOperation(value = "Retorna a lista de postagens desta Tarefa")
-	@GetMapping("/getPostagens")
+	@GetMapping("/postagens")
 	public List<PostagemModel> getPostagensId(@RequestParam int id) {
 		return repository.findById(id).getPostagens();
 	}
 
 	@ApiOperation(value = "Insere uma tarefa no sistema")
-	@PostMapping("/insert")
-	public TarefaModel insertTarefa(@RequestBody TarefaModel tarefa) {
-		TarefaModel cadastroTarefa = new TarefaModel();
-
-		if (Objects.isNull(tarefa.getTitulo()) || Objects.isNull(tarefa.getUsuarioAdministrador().getId())
-				|| Objects.isNull(tarefa.getUsuarioFuncionario().getId()) || Objects.isNull(tarefa.getProjeto().getId())
-				|| Objects.isNull(tarefa.getDataFinal()) || Objects.isNull(tarefa.getDataInicio())) {
+	@PostMapping
+	public TarefaModel insertTarefa(@RequestBody TarefaModel tarefa) {		
+		if(!validaCamposNulos(tarefa)) {
 			return null;
-		}
+		}			
 
 		boolean tituloExiste = tituloValido(tarefa.getTitulo());
 		boolean idUsuarioAdministradorExiste = idUsuarioValido(tarefa.getUsuarioAdministrador().getId());
 		boolean idUsuarioFuncionarioExiste = idUsuarioValido(tarefa.getUsuarioFuncionario().getId());
 		boolean idProjetoExiste = idProjetoValido(tarefa.getProjeto().getId());
 
-		if (tituloExiste || !idUsuarioAdministradorExiste || !idUsuarioFuncionarioExiste || !idProjetoExiste
+		if (!validaCamposNulos(tarefa) || tituloExiste || !idUsuarioAdministradorExiste || !idUsuarioFuncionarioExiste || !idProjetoExiste
 				|| tarefa.getDataFinal().before(tarefa.getDataInicio())) {
 			return null;
 		} else {
+			TarefaModel cadastroTarefa = new TarefaModel();
+			
 			Optional<UsuarioModel> usuarioAdministrador = repositoryUsuario
 					.findById(tarefa.getUsuarioAdministrador().getId());
 			UsuarioModel usuarioAdm = usuarioAdministrador.get();
@@ -105,12 +100,6 @@ public class TarefaController {
 			ProjetoModel projeto = projetoOpt.get();
 			cadastroTarefa.setProjeto(projeto);
 
-			if (!projeto.getFuncionarios().contains(usuarioFunc))
-				projeto.setFuncionarios(usuarioFunc);
-
-			if (!usuarioFunc.getProjetos().contains(projeto))
-				usuarioFunc.setProjetos(projeto);
-
 			cadastroTarefa.setDataCadastro(dataAtual);
 			cadastroTarefa.setDataFinal(formataData(tarefa.getDataFinal()));
 			cadastroTarefa.setDataInicio(formataData(tarefa.getDataInicio()));
@@ -122,27 +111,29 @@ public class TarefaController {
 
 			cadastroTarefa.setTitulo(tarefa.getTitulo());
 			projeto.setTarefas(cadastroTarefa);
+			projeto.setFuncionarios(usuarioFunc);
 
 			usuarioFunc.setTarefasAtribuidas(cadastroTarefa);
+			usuarioFunc.setProjetos(projeto);
 			usuarioAdm.setTarefasCadastradas(cadastroTarefa);
 			return repository.save(cadastroTarefa);
 		}
 	}
 
 	@ApiOperation(value = "Deleta uma tarefa de acordo com o Id")
-	@DeleteMapping("/deleteId")
+	@DeleteMapping("/id")
 	public ResponseEntity<Boolean> deleteTarefaId(@RequestParam int id) {
 		TarefaModel tarefa = repository.findById(id);
 
 		if (Objects.isNull(tarefa)) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
-		} else {			
+		} else {
 			List<ProjetoModel> projetos = repositoryProjeto.findAll();
 			for (ProjetoModel projeto : projetos) {
 				if (projeto.getTarefas().contains(tarefa)) {
 					projeto.getTarefas().remove(tarefa);
 				}
-				if(projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
+				if (projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
 					projeto.getFuncionarios().remove(tarefa.getUsuarioFuncionario());
 				}
 			}
@@ -152,7 +143,7 @@ public class TarefaController {
 				if (usuarioFunc.getTarefasAtribuidas().contains(tarefa)) {
 					usuarioFunc.getTarefasAtribuidas().remove(tarefa);
 				}
-				if(usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
+				if (usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
 					usuarioFunc.getProjetos().remove(tarefa.getProjeto());
 				}
 			}
@@ -165,14 +156,14 @@ public class TarefaController {
 					usuarioAdm.getTarefasAtribuidas().remove(tarefa);
 				}
 			}
-			
+
 			repository.deleteById(id);
 			return ResponseEntity.status(HttpStatus.OK).body(true);
 		}
 	}
 
 	@ApiOperation(value = "Deleta uma tarefa de acordo com o Titulo")
-	@DeleteMapping("/deleteTitulo")
+	@DeleteMapping("/titulo")
 	public ResponseEntity<Boolean> deleteTarefaTitulo(@RequestParam String titulo) {
 		TarefaModel tarefa = repository.findByTitulo(titulo);
 
@@ -184,7 +175,7 @@ public class TarefaController {
 				if (projeto.getTarefas().contains(tarefa)) {
 					projeto.getTarefas().remove(tarefa);
 				}
-				if(projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
+				if (projeto.getFuncionarios().contains(tarefa.getUsuarioFuncionario())) {
 					projeto.getFuncionarios().remove(tarefa.getUsuarioFuncionario());
 				}
 			}
@@ -194,7 +185,7 @@ public class TarefaController {
 				if (usuarioFunc.getTarefasAtribuidas().contains(tarefa)) {
 					usuarioFunc.getTarefasAtribuidas().remove(tarefa);
 				}
-				if(usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
+				if (usuarioFunc.getProjetos().contains(tarefa.getProjeto())) {
 					usuarioFunc.getProjetos().remove(tarefa.getProjeto());
 				}
 			}
@@ -214,14 +205,11 @@ public class TarefaController {
 	}
 
 	@ApiOperation(value = "Atualiza as propriedades de uma tarefa do sistema")
-	@PutMapping("/put")
+	@PutMapping
 	public TarefaModel putTarefa(@RequestBody TarefaModel tarefa) {
-		if (Objects.isNull(tarefa.getId()) || Objects.isNull(tarefa.getTitulo())
-				|| Objects.isNull(tarefa.getUsuarioAdministrador().getId())
-				|| Objects.isNull(tarefa.getUsuarioFuncionario().getId()) || Objects.isNull(tarefa.getProjeto().getId())
-				|| Objects.isNull(tarefa.getDataFinal()) || Objects.isNull(tarefa.getDataInicio())) {
+		if (Objects.isNull(tarefa.getId()) || !validaCamposNulos(tarefa)) {
 			return null;
-		}
+		} 
 
 		boolean idExiste = idTarefaValido(tarefa.getId());
 		boolean idUsuarioAdministradorExiste = idUsuarioValido(tarefa.getUsuarioAdministrador().getId());
@@ -235,11 +223,6 @@ public class TarefaController {
 
 			if (Objects.isNull(tarefaComMesmoTitulo) || tarefaComMesmoTitulo.getId() == tarefa.getId()) {
 				TarefaModel tarefaCadastrada = repository.findById(tarefa.getId()).get();
-
-				HashMap<Integer, Integer> dict1 = new HashMap<Integer, Integer>();
-				for (ProjetoModel pro : tarefaCadastrada.getUsuarioFuncionario().getProjetos()) {
-					dict1.put(pro.getId(), tarefaCadastrada.getUsuarioFuncionario().getId());
-				}
 
 				if (tarefa.getDataFinal().before(tarefa.getDataInicio())) {
 					return null;
@@ -262,12 +245,8 @@ public class TarefaController {
 					ProjetoModel projeto = projetoOpt.get();
 					tarefaCadastrada.setProjeto(projeto);
 
-					if (!projeto.getFuncionarios().contains(usuarioFunc))
-						projeto.setFuncionarios(usuarioFunc);
-
-					if (!usuarioFunc.getProjetos().contains(projeto)) {
-						usuarioFunc.setProjetos(projeto);
-					}
+					projeto.setFuncionarios(usuarioFunc);
+					usuarioFunc.setProjetos(projeto);
 
 					tarefaCadastrada.setDataCadastro(dataAtual);
 					tarefaCadastrada.setDataFinal(formataData(tarefa.getDataFinal()));
@@ -287,35 +266,6 @@ public class TarefaController {
 					if (!usuarioAdm.getTarefasCadastradas().contains(tarefaCadastrada))
 						usuarioAdm.setTarefasCadastradas(tarefaCadastrada);
 
-					HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
-					for (TarefaModel tar : repository.findAll()) {
-						dict.put(tar.getProjeto().getId(), tar.getUsuarioFuncionario().getId());
-					}
-
-					for (Map.Entry<Integer, Integer> entryTarefa : dict.entrySet()) {
-						if (dict1.containsValue(entryTarefa.getValue())) {
-							List<Integer> listaCodigoProjeto = new ArrayList<Integer>();
-							for (ProjetoModel project : usuarioFunc.getProjetos()) {
-								listaCodigoProjeto.add(project.getId());
-							}
-							for (Integer codigoProjeto : listaCodigoProjeto) {
-								if (!dict.containsKey(codigoProjeto)) {
-									usuarioFunc.getProjetos().remove(repositoryProjeto.findById(codigoProjeto).get());
-									projeto.getFuncionarios().remove(repositoryUsuario.findById(entryTarefa.getValue()).get());
-								}
-							}
-						} else if(dict1.containsKey(entryTarefa.getKey())) {
-							List<Integer> listaCodigoUsuario = new ArrayList<Integer>();
-							for (UsuarioModel usu : projeto.getFuncionarios()) {
-								listaCodigoUsuario.add(usu.getId());
-							}
-							for (Integer codigoUsuario : listaCodigoUsuario) {
-								if (!dict.containsValue(codigoUsuario)) {
-									projeto.getFuncionarios().remove(repositoryUsuario.findById(codigoUsuario).get());
-								}
-							}
-						}
-					}
 					return repository.save(tarefaCadastrada);
 				}
 			} else
@@ -323,7 +273,18 @@ public class TarefaController {
 		}
 
 	}
-
+	
+	public boolean validaCamposNulos(TarefaModel tarefa) {
+		if (Objects.isNull(tarefa.getTitulo()) || Objects.isNull(tarefa.getUsuarioAdministrador().getId())
+				|| Objects.isNull(tarefa.getUsuarioFuncionario().getId()) || Objects.isNull(tarefa.getProjeto().getId())
+				|| Objects.isNull(tarefa.getDataFinal()) || Objects.isNull(tarefa.getDataInicio())) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	
 	public boolean idTarefaValido(int id) {
 		TarefaModel tarefa = repository.findById(id);
 

@@ -65,26 +65,26 @@ public class TarefaModel {
     private Date dataCadastro;
 
     @ApiModelProperty(value = "Data de início da tarefa")
-    @Column(name="TAR_DATA_INICIO")
+    @Column(nullable = false, name="TAR_DATA_INICIO")
     private Date dataInicio;
 
     @ApiModelProperty(value = "Data de término da tarefa")
-    @Column(name="TAR_DATA_FINAL")
+    @Column(nullable = false, name="TAR_DATA_FINAL")
     private Date dataFinal;
 
     @ApiModelProperty(value = "Usuário administrador que cadastrou a tarefa")
     @ManyToOne
-    @JoinColumn(name="USU_ID_ADMIN")
+    @JoinColumn(nullable = false, name="USU_ID_ADMIN")
     private UsuarioModel usuarioAdministrador;
 
     @ApiModelProperty(value = "Usuário funcionário que irá executar a tarefa")
     @ManyToOne
-    @JoinColumn(name="USU_ID_FUNC")
+    @JoinColumn(nullable = false, name="USU_ID_FUNC")
     private UsuarioModel usuarioFuncionario;
 
     @ApiModelProperty(value = "Projeto a qual a tarefa pertence")
     @ManyToOne
-    @JoinColumn(name="PRO_ID")
+    @JoinColumn(nullable = false, name="PRO_ID")
     private ProjetoModel projeto;
     
     @JsonIgnore
